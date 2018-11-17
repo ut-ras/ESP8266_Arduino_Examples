@@ -30,8 +30,8 @@
 
 
 //Soft AP
-//const char * ssid = "ESP_Serial_Tool";
-//const char * pass = "esp";
+const char * ssid = "ESP_Serial_Tool";
+const char * pass = "esp";
 
 //Web Server
 int port = 80;
