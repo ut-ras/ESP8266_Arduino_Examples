@@ -24,14 +24,13 @@
 #include <ESP8266WebServer.h>
 
 
+//WiFi Settings
 //STA = connect to a WiFi network with name ssid
 //AP = create a WiFi access point with  name ssid
 #define WIFI_MODE "AP"
-
-
-//Soft AP
 const char * ssid = "ESP_Serial_Tool";
 const char * pass = "esp";
+
 
 //Web Server
 int port = 80;
@@ -42,16 +41,23 @@ String webServerPath = "http://";
 ESP8266WebServer server(port);
 
 
-void setupWiFi() {
-  if (String(WIFI_MODE).equals("AP")) {
+
+
+
+/* setupWiFi
+ * STA = connect to a WiFi network with name ssid
+ * AP = create a WiFi access point with  name ssid
+ */
+void setupWiFi(String mode, const char * _ssid, const char * _pass) {
+  if (mode.equals("AP")) {
     //Turn on Access Point
-    WiFi.softAP(ssid, pass);
+    WiFi.softAP(_ssid, _pass);
     ip = WiFi.softAPIP();
   }
   else {
     //Connect to a WiFi network
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, pass);
+    WiFi.begin(_ssid, _pass);
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       yield();
@@ -78,10 +84,10 @@ void setupWebServer() {
 void setup() {
   Serial.begin(115200);
 
-  setupWiFi();          //Access Point or Station
-  setupWebServer();     //Set up the Web Server
+  setupWiFi(WIFI_MODE, ssid, pass);   //Access Point or Station
+  setupWebServer();                   //Set up the Web Server
 
-  //Serial.println("Access Point ssid = " + String(ssid) + ", pass = " + String(pass));
+  //Serial.println("WiFi mode=" + String(WIFI_MODE) + ", ssid = " + String(ssid) + ", pass = " + String(pass));
   //Serial.println("Web server at " + webServerPath);
 }
 
@@ -93,6 +99,11 @@ void loop() {
 }
 
 
+
+
+
+
+/* Request Handlers */
 
 //main page
 void handleRoot() {
@@ -122,7 +133,7 @@ String indexHTML() {
             String("<body>") +
               "<h1>ESP8266 Serial Tool</h1>" +
               "<form action=\"/serial\" method=\"post\">" +
-                "<input type=\"text\" name=\"serial_input\" value=\"Output to ESP8266 Serial\"><br>" +
+                "<input type=\"text\" name=\"serial_input\" placeholder=\"Output to ESP8266 Serial\"><br>" +
                 "<input type=\"submit\" value=\"Output Serial\"><br>" +
               "</form>" +
             "</body>";
