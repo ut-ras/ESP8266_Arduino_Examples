@@ -10,3 +10,6 @@ Simple WiFi Serial tool. Can be configured to connect to a WiFi network or broad
 
 ## WebServerExample
 Attempting to set up an example web server implementation using the streams in the Arduino WebServer class in the ESP8266WiFi library. The goal is to handle multiple clients, work in progress.
+
+## TimeSyncExample
+Example of how to time sync the ESP8266 and generate strings from the time functions in clock.h. Synchronize time with the internet and then use c standard library functions to get the current time. 
