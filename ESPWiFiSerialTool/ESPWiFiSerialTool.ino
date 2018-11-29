@@ -29,9 +29,13 @@
  * https://www.html5rocks.com/en/tutorials/eventsource/basics/
  * https://hpbn.co/server-sent-events-sse/
  *
- * Javascript DOM update
+ * Javascript AJAX and DOM
  * https://www.w3schools.com/js/js_htmldom.asp
+ * https://www.w3schools.com/js/js_ajax_intro.asp
  * https://www.w3schools.com/js/js_htmldom_nodes.asp
+ * https://www.w3schools.com/js/js_ajax_http_send.asp
+ * https://www.w3schools.com/howto/howto_js_trigger_button_enter.asp
+ * https://www.w3schools.com/jsref/event_onclick.asp
  *
  */
 
@@ -59,8 +63,6 @@ ESP8266WebServer server(port);
 
 //Serial Monitor
 boolean serial_monitor_on = false;
-
-
 
 
 
@@ -130,8 +132,6 @@ void loop() {
 
 
 
-
-
 /* Request Handlers */
 
 //main page   "/"
@@ -149,39 +149,55 @@ void handleSerial() {
   serial_monitor_on = false;
 
   //check for serial input form
+  String serial_input = "";
   if(server.hasArg("serial_input")) {
-    String serial_input = server.arg("serial_input");
+    serial_input = server.arg("serial_input");
     Serial.println(serial_input);
   }
 
-  handleRoot();
+  //handleRoot();     //now the form is handled with JS so there is no need to respond with index html
+  server.send(200, "text/plain", serial_input);
 }
 
 
 // server-sent event request  "/serialupdate"
 void handleSerialUpdate() {
-  WiFiClient client = server.client();
-  if (client) {
-    //Serial.println("New Serial Monitor Request");
-    serial_monitor_on = true;
-
-    //Respond to the client to say Server Sent Event stream is starting
-    serverSentEventHeader(client);
-  }
+    WiFiClient client = server.client();
+    if (client) {
+      //Serial.println("New Serial Monitor Request");
+      serial_monitor_on = true;
+  
+      //Respond to the client to say Server Sent Event stream is starting
+      serverSentEventHeader(client);
+    }
 }
 
 // server-sent event stream to "/serialupdate"
 void handleSerialUpdateEvent() {
-  WiFiClient client = server.client();
-  if (client.connected()) {
-    serverSentEvent(client);
-    delay(16);
-  }
-  else {
-    serial_monitor_on = false;
-    delay(1);
-    client.stop();
-    //Serial.println("client disconnected");
+  if (Serial.available()) {
+    WiFiClient client = server.client();
+    if (client.connected()) {
+      /* minimize serial data is lost, the Serial buffer insn't big
+       * we could readStringUntil('\n') 1 string each loop, but the buffer might fill, so we want to empty it each loop
+       * Idea 1 (below): loop Serial.available, send all data, will hang the server and prevent client reqs for lots of inputs though
+       * Idea 2 (TODO): loop Serial.available, read all data into an extra buffer, send 1 from that buffer each loop on fixed dt
+       * Either way, we can still lose data if the Arduino Serial buffer fills up between loops
+       * Also, since we are not getting a response from the client, we can't be sure it got there
+       */
+      String mssg = "";
+      while (Serial.available()) {
+        if (mssg != "") {delay(16);}            
+        mssg = Serial.readStringUntil('\n');
+        //Serial.println("Received Serial Input " + mssg);
+        serverSentEvent(client, "serialupdate", mssg);
+      }
+    }
+    else {
+      serial_monitor_on = false;
+      delay(1);
+      client.stop();
+      //Serial.println("client disconnected");
+    }
   }
 }
 
@@ -200,12 +216,10 @@ void serverSentEventHeader(WiFiClient client) {
 }
 
 // server-sent event data stream
-void serverSentEvent(WiFiClient client) {
-  String mssg = Serial.readString();
-  if (mssg != "" && mssg != NULL) {
-    //Serial.println("Received Serial Input " + mssg);
-    client.println("event: serialupdate");
-    client.println("data: " + mssg + "");
+void serverSentEvent(WiFiClient client, String eventName, String data) {
+  if (data != NULL) {
+    client.println("event: " + eventName);
+    client.println("data: " + data);
     client.println();
     client.flush();
   }
@@ -214,28 +228,31 @@ void serverSentEvent(WiFiClient client) {
 
 
 /* HTML */
-
+//TODO stop using inline style tags and just make some css classes
 String indexHTML() {
   String htmlPage =
-            String("<body>") +
-              "<div id=\"page_header\" style=\"margin: 0 5% 2em 5%;\">" +
+            String("<body style=\"font-family:'Arial'; background-color:#1d1f21; color:#c5c8c6;\">") +
+              "<div id=\"page_header\" style=\"margin: 0 5% 2em 5%; color:#cc6666;\">" +
                 "<h1>ESP8266 Serial Tool</h1>" +
               "</div>" +
 
-              "<div id=\"serial_out\" style=\"margin: 0 5% 2em 5%;\">" +
-                "<h3>Serial Output</h3>" +
-                "<form action=\"/serial\" method=\"post\">" +
-                  "<input type=\"text\" name=\"serial_input\" placeholder=\"Output to ESP8266 Serial\"><br>" +
-                  "<input type=\"submit\" value=\"Output Serial\"><br>" +
-                "</form>" +
-              "</div>" +
-
-              "<div id=\"serial_in\" style=\"margin: 0 5% 2em 5%;\">" +
-                "<h3>Serial Input</h3>" +
-                "<div id=\"serial_display\" style=\"padding-left: 5%; border:inset;\">" +
+              "<div id=\"page_serial\" style=\"margin: 0 5% 2em 5%;\">" +
+                "<h3 style=\"color:#81a2be;\">Serial Console</h3>" +
+                
+                "<div id=\"serial_console\" style=\"border:inset;  border-color:#8abeb7; background-color:#282a2e;\">" +             
+                  "<div id=\"serial_display\" style=\"padding-left: 1.5em; min-height: 5em; max-height: 10em; overflow: auto; font-size:medium;\">" +
+                    //Stuff is added here from JS
+                  "</div>" +
+  
+                  "<div id=\"serial_out\" style=\"border-top:groove; border-color:#8abeb7;\">" +
+                    "<button onclick=\"postSerial()\" style=\"float: right;  color:#1d1f21; background-color:#8abeb7;border-color:#5e8d87; font-family:'Arial';font-size:medium;\">Output Serial</button>" +
+                    "<div style=\"overflow: hidden;\">" +
+                      "<input type=\"text\" id=\"serial_input\" placeholder=\"Output to ESP8266 Serial\" style=\"width: 100%; padding-left: 1.5em; border:none; background-color:#282a2e; color:#c5c8c6; font-family:'Arial';font-size:medium;\">" +
+                    "</div>" +
+                  "</div>" +
                 "</div>" +
               "</div>" +
-
+              
               getConsoleEventJavascript() +
             "</body>";
   return htmlPage;
@@ -243,13 +260,9 @@ String indexHTML() {
 
 void handleNotFound() {
   String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET)?"GET":"POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
+  message += "URI: " + server.uri() + "\n";
+  message += "Method: " + String((server.method() == HTTP_GET)?"GET":"POST") + "\n";
+  message += "Arguments: " + String(server.args()) + "\n";
   for (uint8_t i=0; i<server.args(); i++){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
@@ -267,24 +280,46 @@ String getConsoleEventJavascript() {
         "var text = document.createTextNode(mssg);" +
         "var pg = document.createElement('p');" +
         "pg.appendChild(text); " +
-        "document.getElementById('serial_display').appendChild(pg);" +
+        "var display = document.getElementById('serial_display'); " +
+        "display.appendChild(pg); " +
+        "display.scrollTop = display.scrollHeight; " +
       "}" +
+      
+      //function to HTTP Post
+      "function postSerial() {" +
+        "var textBox = document.getElementById('serial_input');" +
+        "var mssg = textBox.value;" +
+
+        "var xhttp = new XMLHttpRequest(); " +
+        "xhttp.open('POST', '/serial', true);" +
+        "xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');" +
+        "xhttp.send('serial_input=' + mssg);" +
+
+        "textBox.value = '';" +
+        "xhttp.onload = function() { " +
+          //Only add the mssg to the console if the ESP8266 received it and sent a response back
+          "console.log('Serial Post: ' + xhttp.responseText); " +
+          "addConsoleEvent('> ' + xhttp.responseText);" +
+        "}" +
+      "}" +
+      
+      // Response when user presses "Enter" in the input text box
+      "var textBox = document.getElementById('serial_input');" +
+      "textBox.addEventListener('keyup', function(e) {" +
+        "e.preventDefault();" +
+        "if (e.keyCode === 13) { postSerial(); }" +
+      "});" +
 
       //Initialize an EventSource to listen for server sent events at /serialupdate
       "var source = new EventSource('/serialupdate');" +
       "if(typeof(EventSource)!=='undefined') {" +
         "console.log('EventSource initialized');" +
 
-        /* // Server sent event listener version 1: this wasn't working for me, not sure why
-        "source.onmessage = function(e) {" +
-            "console.log('Serial Console Event onmessage' + e.data);" +
-        "};" + */
-
-        // Server sent event listener version 2: this works for me
+        // Server sent event listener
         "source.addEventListener('serialupdate', function(e) {" +
             //"var data = JSON.parse(e.data);" +    //json parsing example
-            "console.log('Serial Console Event ' + e.data);" +
-            "addConsoleEvent(e.data);" +
+            "console.log('Serial Console Event: ' + e.data);" +
+            "addConsoleEvent('< ' + e.data);" +
         "}, false);"
 
         "console.log('EventSource Listener Initialized');" +

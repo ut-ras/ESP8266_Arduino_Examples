@@ -15,9 +15,9 @@ https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html<br>
 ![ESPWiFiSerialTool Image](img/esp01_pinout.PNG)
 
 ## ESPWiFiSerialTool
-Simple WiFi Serial tool. Can be configured to connect to a WiFi network or broadcast its own Access Point. It also creates a web server with a simple Serial output HTML form. The form text is output over the ESP8266 Serial pins. There is also a Javascript console, which receives Server-Sent HTTP event stream updates when the ESP8266 receives Serial inputs. Working towards a fully functional Serial console. This project is meant to be added onto existing RAS projects that accept serial input (like the LED sign board) so we can easily run demos from any phone or computer. Uses the ESP8266WebServer library.
+Simple WiFi Serial tool. Can be configured to connect to a WiFi network or broadcast its own Access Point. It also creates a web server with a Javascript console, which can output data and receive input to the ESP8266 Serial pins. The Serial output operates through an AJAX POST form. The live updates on Serial input are sent through a Server-Sent HTTP event stream. This project is meant to be added onto existing RAS projects that accept serial input (like the LED sign board) so we can wirelessly run demos from any phone or computer. Uses the ESP8266WebServer library.
 
-![ESPWiFiSerialTool Image](img/serialtool2.PNG)
+![ESPWiFiSerialTool Image](img/serialtool3.PNG)
 
 ## WebServerExample
 Attempting to set up an example web server implementation using the streams in the Arduino WebServer class in the ESP8266WiFi library. The goal is to handle multiple clients, work in progress.
