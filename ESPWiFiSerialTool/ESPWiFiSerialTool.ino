@@ -32,8 +32,8 @@
  * Javascript AJAX and DOM
  * https://www.w3schools.com/js/js_htmldom.asp
  * https://www.w3schools.com/js/js_ajax_intro.asp
- * https://www.w3schools.com/js/js_htmldom_nodes.asp
  * https://www.w3schools.com/js/js_ajax_http_send.asp
+ * https://www.w3schools.com/js/js_htmldom_nodes.asp
  * https://www.w3schools.com/howto/howto_js_trigger_button_enter.asp
  * https://www.w3schools.com/jsref/event_onclick.asp
  *
