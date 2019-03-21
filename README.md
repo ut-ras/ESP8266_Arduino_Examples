@@ -7,11 +7,17 @@ https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html<br>
  * VCC: 3.3V
  * GND: GND
  * CH_PD: 3.3V via 10k resistor
- * RST: 3.3V via 10k resistor, or to a GPIO pin if you want to reset, or float
- * RX and TX: any UART RX and TX pins, depends on the microcontroller
+ * RST: 3.3V via 10k resistor, or float, or to a GPIO pin if you want to reset
+ * RX (GPIO3) and TX (GPIO1): any UART RX and TX pins, depends on the microcontroller
      * TI TM4C LaunchPad: UART1 RX -> PB1, TX -> PB0, set up and read from UART 1
- * To flash, connect GPIO0 to ground before connecting to power
- * To use GPIO2 for output, need to be at 3.3V up when it boots, but after boot it is free
+ * To flash, before booting connect
+   * GPIO0 to ground
+   * GPIO2 to 3.3V or float (there is an internal pull up)
+ * To run, before booting connect
+   * GPIO0 to 3.3V or float
+   * GPIO2 to 3.3V or float
+ * GPIO0, GPIO2, and GPIO1 are all busy during boot, but are free to be used as GPIO afterwards
+   * RX (GPIO3) can be connected to a servo on boot, but TX (GPIO1) can only be connected after boot
 
 ![ESPWiFiSerialTool Image](img/esp01_pinout.PNG)
 
@@ -27,7 +33,7 @@ Attempting to set up an example web server implementation using the streams in t
 Example of how to time sync the ESP8266 and generate strings from the time functions in clock.h. Synchronize time with the internet and then use c standard library functions to get the current time.
 
 ## ESPSseServer
-Example of maintaining a HTTP event-stream of Server-Sent Events with ESP8266WebServer.
+Example of maintaining a HTTP event-stream of Server-Sent Events with ESP8266WebServer. Need to do another example this with a different web server because this implementation is not meant to persist connections clients for a long time, but it works with Javascript EventSource because they will reconnect.
 
 ## ESPHttpNode
 Examples of various HTTP client requests that a device can make to other servers, such as GET, POST, and listening to Server-Sent Event streams.
