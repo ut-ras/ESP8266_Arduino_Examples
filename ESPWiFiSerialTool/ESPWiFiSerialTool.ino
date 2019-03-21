@@ -3,7 +3,7 @@
  * Sets up the ESP8266 as a WiFi Access Point or connects to an existing WiFi network
  * Launches a Web Server with a form to output text over Serial
  * The server also outputs a console with live updates from Serial events on the ESP8266,
- *      using Javascript and Server-Sent HTTP event stream
+ *      using Javascript and Server-Sent HTTP event stream (see ESPSseServer project)
  *
  * WIFI_MODE variable
  * AP Mode: Launches the web server at http://192.168.4.1:80/
@@ -48,8 +48,8 @@
 //STA = connect to a WiFi network with name ssid
 //AP = create a WiFi access point with  name ssid
 #define WIFI_MODE "AP"
-const char * ssid = "ESP_Serial_Tool";
-const char * pass = "esp";
+const char * ssid = "Demobot";
+const char * pass = "demobot1234";
 
 
 //Web Server
@@ -166,7 +166,7 @@ void handleSerialUpdate() {
     if (client) {
       //Serial.println("New Serial Monitor Request");
       serial_monitor_on = true;
-  
+
       //Respond to the client to say Server Sent Event stream is starting
       serverSentEventHeader(client);
     }
@@ -186,7 +186,7 @@ void handleSerialUpdateEvent() {
        */
       String mssg = "";
       while (Serial.available()) {
-        if (mssg != "") {delay(16);}            
+        if (mssg != "") {delay(16);}
         mssg = Serial.readStringUntil('\n');
         //Serial.println("Received Serial Input " + mssg);
         serverSentEvent(client, "serialupdate", mssg);
@@ -238,12 +238,12 @@ String indexHTML() {
 
               "<div id=\"page_serial\" style=\"margin: 0 5% 2em 5%;\">" +
                 "<h3 style=\"color:#81a2be;\">Serial Console</h3>" +
-                
-                "<div id=\"serial_console\" style=\"border:inset;  border-color:#8abeb7; background-color:#282a2e;\">" +             
+
+                "<div id=\"serial_console\" style=\"border:inset;  border-color:#8abeb7; background-color:#282a2e;\">" +
                   "<div id=\"serial_display\" style=\"padding-left: 1.5em; min-height: 5em; max-height: 10em; overflow: auto; font-size:medium;\">" +
                     //Stuff is added here from JS
                   "</div>" +
-  
+
                   "<div id=\"serial_out\" style=\"border-top:groove; border-color:#8abeb7;\">" +
                     "<button onclick=\"postSerial()\" style=\"float: right;  color:#1d1f21; background-color:#8abeb7;border-color:#5e8d87; font-family:'Arial';font-size:medium;\">Output Serial</button>" +
                     "<div style=\"overflow: hidden;\">" +
@@ -252,7 +252,7 @@ String indexHTML() {
                   "</div>" +
                 "</div>" +
               "</div>" +
-              
+
               getConsoleEventJavascript() +
             "</body>";
   return htmlPage;
@@ -284,7 +284,7 @@ String getConsoleEventJavascript() {
         "display.appendChild(pg); " +
         "display.scrollTop = display.scrollHeight; " +
       "}" +
-      
+
       //function to HTTP Post
       "function postSerial() {" +
         "var textBox = document.getElementById('serial_input');" +
@@ -302,7 +302,7 @@ String getConsoleEventJavascript() {
           "addConsoleEvent('> ' + xhttp.responseText);" +
         "}" +
       "}" +
-      
+
       // Response when user presses "Enter" in the input text box
       "var textBox = document.getElementById('serial_input');" +
       "textBox.addEventListener('keyup', function(e) {" +
@@ -332,4 +332,3 @@ String getConsoleEventJavascript() {
   "</script>";
   return s;
 }
-

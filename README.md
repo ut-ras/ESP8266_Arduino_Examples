@@ -7,10 +7,11 @@ https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html<br>
  * VCC: 3.3V
  * GND: GND
  * CH_PD: 3.3V via 10k resistor
- * RST: 3.3V via 10k resistor, or to a GPIO pin if you want to reset
+ * RST: 3.3V via 10k resistor, or to a GPIO pin if you want to reset, or float
  * RX and TX: any UART RX and TX pins, depends on the microcontroller
      * TI TM4C LaunchPad: UART1 RX -> PB1, TX -> PB0, set up and read from UART 1
  * To flash, connect GPIO0 to ground before connecting to power
+ * To use GPIO2 for output, need to be at 3.3V up when it boots, but after boot it is free
 
 ![ESPWiFiSerialTool Image](img/esp01_pinout.PNG)
 

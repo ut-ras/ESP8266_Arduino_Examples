@@ -1,6 +1,10 @@
 /*
  * ESPSseServer
  *
+ * The ESP8266WebServer by default will disconnect the client every 2 seconds (HTTP_MAX_CLOSE_WAIT),
+ * so this will work with standard compliant JS EventSource (which will reconnect if disconnected),
+ * but does not really model the correct SSE behavior. See ESPWiFiSerialTool for an example.
+ *
  *
  * HTTP Event Streams / Server-Sent Events
  * Server-Sent events are a connection between a client and server where the session is
@@ -9,6 +13,7 @@
  * Browsers can listen to event streams in the background with Javascript EventSource,
  * or other devices can listen like in the ESPHttpNode example.
  *    https://www.w3schools.com/html/html5_serversentevents.asp
+ *    https://www.w3.org/TR/eventsource/
  *    https://developer.mozilla.org/en-US/docs/Web/API/EventSource
  *    https://www.html5rocks.com/en/tutorials/eventsource/basics/
  *    https://hpbn.co/server-sent-events-sse/
@@ -39,7 +44,7 @@ ESP8266WebServer server(port);
 
 //Server Sent Event
 boolean sse_on = false;
-
+#define SSE_MIN_UPDATE_MS 1500
 
 
 /* Setup Functions */
@@ -85,6 +90,7 @@ void setup() {
   setupWiFi(WIFI_MODE, ssid, pass);   //Access Point or Station
   setupWebServer();                   //Set up the Web Server
 
+  Serial.println();
   Serial.println("WiFi mode=" + String(WIFI_MODE) + ", ssid = " + String(ssid) + ", pass = " + String(pass));
   Serial.println("Web server at " + webServerPath);
 }
@@ -93,13 +99,14 @@ void setup() {
 
 /* Main Loop */
 void loop() {
-  //handle sse updates
-  serverSentEventUpdate("eventname", "eventdata");
-
   //handle web server
   server.handleClient();
 
-  delay(500);
+  //handle sse updates
+  serverSentEventUpdate("eventname", "eventdata");
+
+
+  delay(200);
 }
 
 
@@ -119,7 +126,10 @@ void handleSseRequest() {
 
 // server-sent event stream to "/sse"
 void serverSentEventUpdate(String eventName, String data) {
-  if (sse_on) {
+  static long next_sse_update_t = millis() + SSE_MIN_UPDATE_MS;
+  long current_t = millis();
+  if (sse_on && (current_t >= next_sse_update_t)) {
+    next_sse_update_t = current_t + SSE_MIN_UPDATE_MS;
     WiFiClient client = server.client();
     if (client.connected()) {
       serverSentEvent(client, eventName, data);
@@ -156,7 +166,6 @@ void serverSentEvent(WiFiClient client, String eventName, String data) {
     client.flush();
   }
 }
-
 
 
 
