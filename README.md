@@ -33,7 +33,7 @@ Attempting to set up an example web server implementation using the streams in t
 Example of how to time sync the ESP8266 and generate strings from the time functions in clock.h. Synchronize time with the internet and then use c standard library functions to get the current time.
 
 ## ESPSseServer
-Example of maintaining a HTTP event-stream of Server-Sent Events with ESP8266WebServer. Need to do another example this with a different web server because this implementation is not meant to persist connections clients for a long time, but it works with Javascript EventSource because they will reconnect.
+Example of maintaining a HTTP event-stream of Server-Sent Events with ESP8266WebServer. Need to do another example with a different web server because this implementation is not meant to persist connections with clients for a long time, but it works with Javascript EventSource and listeners that will reconnect.
 
 ## ESPHttpNode
-Examples of various HTTP client requests that a device can make to other servers, such as GET, POST, and listening to Server-Sent Event streams.
+Examples of various HTTP client requests that a device can make to other servers, such as GET, POST, and listening to Server-Sent Event streams. Function sseListen models a Javascript EventSource, but it's not fully standard compliant.

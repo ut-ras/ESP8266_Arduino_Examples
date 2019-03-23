@@ -24,162 +24,53 @@
 
 
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+
+#include "espHttpNode.h"
 
 
 const char * ssid = "Demobot";
 const char * pass = "demobot1234";
-const char * sse_url = "http://192.168.4.1:80/sse";
-
-//Server Sent Event
-boolean sse_on = false;
-
-HTTPClient http;
+IPAddress ip;
 
 
 void setup() {
   Serial.begin(115200);
   setupWiFi(ssid, pass);
-  http.setReuse(true);        //keepalive
+  setupHTTP();
 }
 
 void loop() {
-  if (WiFi.status() != WL_CONNECTED) {
-    setupWiFi(ssid, pass);
-    delay(2500);
-  }
+  // Check WiFi
+  setupWiFi(ssid, pass);
 
-  // Remains in this function as long as the server maintains the connection,
-  // if connection is lost it will reconnect next loop()
-  sseListen(sse_url);
+  // HTTP Server Sent Event
+  // Remains in this function as long as the server maintains the connection.
+  sseListen("http://192.168.4.1:80/sse");
 
-  delay(1000);
+  //String get_resp = httpGet("http://192.168.4.1:80/getsomething");
+  //int post_resp = httpPost("http://192.168.4.1:80/postsomething", "something");
+
+  delay(2000);
 }
-
 
 
 /* Connect to a WiFi network
  */
 void setupWiFi(const char * _ssid, const char * _pass) {
-  Serial.print("WiFi Connecting");
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(_ssid, _pass);
-  while (WiFi.status() != WL_CONNECTED) {
-    yield();
-    delay(250);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("WiFi Connected ssid: ");
-  Serial.println(_ssid);
-}
-
-
-
-/* HTTP event-stream
- * This function models behavior of a JS EventSource, but not fully standard compliant.
- * Sends a GET request to url, session maintained for an event-stream response.
- * Server Sent Event loop, waits in function for duration of connection. 
- */
-void sseListen(const char * _sse_url) {
-  WiFiClient client;
-  http.begin(client, String(_sse_url));
-
-  int httpCode = http.GET();              //request event stream
-  if (httpCode > 0 && httpCode == HTTP_CODE_OK) {
-    Serial.printf("[HTTP] GET... code: %d\n\r", httpCode);
-
-    int len = http.getSize();             //(-1 when Server sends no Content-Length header)
-    if (len != -1) {
-      Serial.printf("[HTTP] connection has specified Content-Length (%d).\n\r", len);
-      http.end();
-      return;
-    }
-
-    sse_on = true;
-    uint8_t buff[256] = { 0 };            //temporary buffer for 128b at a time
-    WiFiClient * stream = &client;
-
-    while (http.connected()) {
-      size_t size = stream->available();
-
-      if (size) {
-        //buffer overwritten by amount of available bytes
-        int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-        handleSseData(buff, c);
-      }
+  //Connect to a WiFi network
+  if (!isWiFiConnected()) {
+    Serial.print("WiFi Connecting");
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(_ssid, _pass);
+    while (!isWiFiConnected()) {
+      delay(500);
       yield();
-      delay(200);
+      Serial.print(".");
     }
-    Serial.println();
-    Serial.printf("[HTTP] connection closed.\n\r", len);
-    sse_on = false;
+    ip = WiFi.localIP();
+
+    Serial.println("");
+    Serial.print("WiFi Connected ssid: ");
+    Serial.println(_ssid);
   }
-  else {
-    Serial.printf("[HTTP] GET... failed, error: %s\n\r", http.errorToString(httpCode).c_str());
-  }
-
-  http.end();
-}
-
-/* Server Sent Event data received
- */
-void handleSseData(uint8_t * buff, int buff_len) {
-  //up to 128 bytes in buff at this point
-  //not necessarily a full SSE line, need to parse
-  //events deliminated by double newlines
-  //data in format "event: ", and "data: "
-  //if not a full line, might need to store remainder until next time
-
-  //TODO
-
-  Serial.write(buff, buff_len);
-}
-
-
-
-
-/* HTTP GET
- * session started, request sent, wait for response, session ended
- * response payload returned as String
- */
-String httpGet(String url) {
-  WiFiClient client;
-  HTTPClient http;
-  String payload = "";
-  http.begin(client, url);
-
-  //send HTTP request
-  //httpCode = http.GET();
-  int httpCode = http.sendRequest("GET");
-  Serial.printf("[HTTP] GET... code: %d\n\r", httpCode);
-
-  if (httpCode > 0 && httpCode == HTTP_CODE_OK) {
-    //can also get the response in a buffer instead of a String (see ESP8266HTTPClient examples)
-    payload = http.getString();     //get response
-    Serial.println(payload);
-  }
-  else {
-    payload = "HTTP_" + String(httpCode);
-  }
-
-  http.end();
-  return payload;
-}
-
-/* HTTP POST
- * session started, request sent, session ended
- */
-int httpPost(String url, String payload) {
-  WiFiClient client;
-  HTTPClient http;
-  http.begin(client, url);
-
-  //send HTTP request
-  int httpCode = http.POST(payload);
-  //int httpCode = http.sendRequest("POST", payload, size);     //uint8_t * payload, size_t size
-
-  Serial.printf("[HTTP] POST... code: %d\n\r", httpCode);
-  http.end();
-  return httpCode;
 }
